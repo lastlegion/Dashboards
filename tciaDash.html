@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="dc.css" />
+    <script src="crossfilter.v1.min.js"></script>
+    <script src="d3.v3.min.js"></script>
+    <script src="dc.js"></script>
+    <style>
+      body{
+        font-family: Arial, Tahoma;
+        font-size: 11px;
+      }
+      #data-table{
+        border: 1px solid #333;
+        margin: 20px;
+        position: relative;
+        left: 40px;
+        padding: 10px;
+      }
+      #data-table tr,td{
+        padding: 4px;
+      }
+      
+    </style>
+
+  </head>
+  
+  <body>
+    
+    
+    <div id="tumor-pie-chart"></div>
+    
+    <table id="data-table">
+      <thead>
+        <tr class="header">
+          <th>Patient id</th>
+          <th>Ethnicity</th>
+          <th>Gender</th>
+        </tr>
+    </table>
+  </body>
+  <script type="text/javascript">
+
+    function print_filter(filter){
+	    var f=eval(filter);
+	    if (typeof(f.length) != "undefined") {}else{}
+	    if (typeof(f.top) != "undefined") {f=f.top(Infinity);}else{}
+	    if (typeof(f.dimension) != "undefined") {f=f.dimension(function(d) { return "";}).top(Infinity);}else{}
+	    console.log(filter+"("+f.length+") = "+JSON.stringify(f).replace("[","[\n\t").replace(/}\,/g,"},\n\t").replace("]","\n]"));
+    } 
+    
+    d3.json("data.json", function(data){
+      var tcia = crossfilter(data);
+      
+      //create data dimensions
+      var patient_id = tcia.dimension(function(d){return d.patient_id;});
+      var race = tcia.dimension(function(d){return d.race;});
+      var gender = tcia.dimension(function(d){return d.gender;});
+      var cancer_status = tcia.dimension(function(d){return d.person_neoplasm_cancer_status});
+      var age_at_initial_pathologic_diagnosis = tcia.dimension(function(d){return d.age_at_initial_pathologic_diagnosis});
+      var tumors = cancer_status.group();
+      print_filter(tumors); 
+      //Draw tumor pie chart
+      var tumorChart = dc.pieChart("#tumor-pie-chart");
+      tumorChart.width(180).height(180)
+        .dimension(cancer_status)
+        .group(tumors)
+        .innerRadius(30)
+        .label(function(p){
+          if(p.key == "[Not Available]")
+            return "NA";
+          else if(p.key == "WITH TUMOR")
+            return "TUMOR";
+          else
+            return p.key
+        });        
+      var datatable = dc.dataTable("#data-table");
+      datatable
+      .dimension(cancer_status)
+      .group(function(d) {return d.cancer_status ;})
+      // dynamic columns creation using an array of closures
+      .columns([
+          function(d) {return d.patient_id;},
+          function(d) {return d.race;},
+          function(d) {return d.gender;}
+      ]);
+      dc.renderAll();
+      console.log("yo")
+      
+    });
+    
+    /*: 
+
+    */
+  </script>
+  
+  
+  
+  
+</html>
